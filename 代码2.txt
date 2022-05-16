@@ -1,0 +1,558 @@
+/*
+    城市信息管理系统
+    作者 HIT 120L020103 夏晟
+    语言 C/C++
+
+*/
+
+#include<conio.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<windows.h>
+#include<time.h>
+#include <memory.h>
+#define HASH_TABLE_CAPACITY 20
+#define swap(a,b) {int tmp=a;a=b;b=tmp;}
+/*
+功能设计
+    1主入口界面 选择下一步功能
+    2输入新的城市 (城市名称小写 城市邮政编码 人口 近三年GDP亿/元)
+    5show全部城市
+    6按邮编排序
+    7按字典序排序
+    8按人口或GDP排序
+
+    bgm配置
+    文件存储
+*/
+struct city {
+    char name[20];
+    int mail;
+    float pop;
+    float gdp1;
+    float gdp2;
+    float gdp3;
+    float ave;
+    struct city *next;
+}*head,*tail;
+
+typedef struct city CITY;
+
+
+
+
+void init();
+void ins();
+void hidecursor();
+void Goto(short int x,short int y);
+void modeset(int w,int h);
+void show();
+void flush();
+struct city* linksort_gdp(struct city *phead);
+struct city* linkmerge(struct city  *head1, struct city *head2);
+CITY *bubbleSortList( CITY *phead) ;
+CITY *bubbleSortmail( CITY *phead) ;
+CITY *bubbleSortpop( CITY *phead) ;
+CITY *bubbleSortname( CITY *phead) ;
+void mapdis();
+void DeleteMemory(struct city *phead);
+
+
+int main(){
+    head = NULL;
+    char mode;
+    //system("back.mp3");
+    //PlaySound("back.wav",NULL,SND_ASYNC);
+    while(1){
+        init();//初始化界面
+
+        mode=getch();//获取模式选择
+        system("cls");//清屏
+
+        CITY* q0=head;
+        FILE *fp;
+
+        switch(mode){
+            case '0':
+                flush();
+                break;
+            case '1':
+                ins();
+                break;
+            case '2':
+                show();
+                break;
+            case '3'://
+                head=bubbleSortList(head);
+                flush();
+                q0=head;
+                if((fp=fopen("data.txt","w")) == NULL){
+                    printf("Failure to open data.txt!\n");
+                    break;
+                }
+
+                while(q0!=NULL){
+                    fprintf(fp,"%s %d %f %f %f %f %f\n",q0->name, q0->mail,
+                            q0->pop,q0->gdp1,q0->gdp2,q0->gdp3,q0->ave);
+                    q0=q0->next;
+                }
+
+                fclose(fp);
+                break;
+            case '4':
+                head=bubbleSortmail(head);
+                flush();
+                q0=head;
+                if((fp=fopen("data.txt","w")) == NULL){
+                    printf("Failure to open data.txt!\n");
+                    break;
+                }
+
+                while(q0!=NULL){
+                    fprintf(fp,"%s %d %f %f %f %f %f\n",q0->name, q0->mail,
+                            q0->pop,q0->gdp1,q0->gdp2,q0->gdp3,q0->ave);
+                    q0=q0->next;
+                }
+
+                fclose(fp);
+                break;
+            case '5':
+                head=bubbleSortpop(head);
+                flush();
+                q0=head;
+                if((fp=fopen("data.txt","w")) == NULL){
+                    printf("Failure to open data.txt!\n");
+                    break;
+                }
+
+                while(q0!=NULL){
+                    fprintf(fp,"%s %d %f %f %f %f %f\n",q0->name, q0->mail,
+                            q0->pop,q0->gdp1,q0->gdp2,q0->gdp3,q0->ave);
+                    q0=q0->next;
+                }
+
+                fclose(fp);
+                break;
+            case '6':
+                head=bubbleSortname(head);
+                flush();
+                q0=head;
+                if((fp=fopen("data.txt","w")) == NULL){
+                    printf("Failure to open data.txt!\n");
+                    break;
+                }
+
+                while(q0!=NULL){
+                    fprintf(fp,"%s %d %f %f %f %f %f\n",q0->name, q0->mail,
+                            q0->pop,q0->gdp1,q0->gdp2,q0->gdp3,q0->ave);
+                    q0=q0->next;
+                }
+
+                fclose(fp);
+                break;
+            case '7':
+                printf("本功能为特色功能，请你给出已编号城市之间有航线的航线距离，\n");
+                printf("系统将用与图相关算法为你计算出各地之间最短航程。\n");
+                mapdis();
+            case '9':
+                for (float y = 1.5f; y > -1.5f; y -= 0.1f) {
+                    for (float x = -1.5f; x < 1.5f; x += 0.05f) {
+                        float a = x * x + y * y - 1;
+                            putchar(a * a * a - x * x * y * y * y <= 0.0f ? '*' : ' ');
+                    }
+                    putchar('\n');
+                }
+                printf("哈哈没啥送你的，送你一颗小(大大的)爱心，期末不易，加油哦\n");
+                getch();
+                break;
+            default:break;
+        }
+
+    }
+
+    //释放内存
+    DeleteMemory(head);
+
+    return 0;
+}
+
+//初始化界面显示
+//无参数需要
+//返回void
+void init (){
+
+    system("color f0");
+    system("mode con cols=100 lines=30");
+    system("mode con cols=100 lines=30");
+    SetConsoleTitle("小太阳城市信息管理系统");
+    hidecursor();
+    //system("HELP");
+    //system("time");
+   // system("cmd");
+    /*
+     0 = 黑色       8 = 灰色
+    1 = 蓝色       9 = 淡蓝色
+    2 = 绿色       A = 淡绿色
+    3 = 浅绿色     B = 淡浅绿色
+    4 = 红色       C = 淡红色
+    5 = 紫色       D = 淡紫色
+    6 = 黄色       E = 淡黄色
+    7 = 白色       F = 亮白色
+    */
+
+    printf("**********************************************"
+           "******************************************************");
+    Goto(0,29);
+    printf("****************************************************"
+           "************************************************");
+
+    Goto(25,4);
+    printf("hello,欢迎来到小太阳城市信息管理系统(你看我是不是很白呀)");
+    Goto(25,5);
+    printf("请选择：");
+    Goto(25,7);
+    printf("1，添加新的城市");
+    Goto(25,8);
+    printf("2，查看已有城市");
+    Goto(25,9);
+    printf("3，按三年平均GDP排列城市(修改在文件中，请稍后用2功能查看)");
+    Goto(25,10);
+    printf("4，按邮编排列城市(修改在文件中，请稍后用2功能查看)");
+    Goto(25,11);
+    printf("5，按人口排列城市(修改在文件中，请稍后用2功能查看)");
+    Goto(25,12);
+    printf("6，按字典序排列城市(修改在文件中，请稍后用2功能查看)");
+    Goto(25,13);
+    printf("7，旅行费用计算功能");
+    Goto(25,6);
+    printf("0，清空data");
+    Goto(25,20);
+    printf("按9有彩蛋嘿嘿嘿……");
+    Goto(0,1);
+    printf("注意:本系统采用链表排序，所以务必用1功能键添加数据，链表中才会有数据，"
+           "请不要自行在data.txt中修改");
+
+
+
+}
+
+//获取输入数据
+//无参数需要
+//返回void
+void ins(){
+    FILE *fp;
+    char flag = 'Y';
+    struct city *q;
+
+    if((fp=fopen("data.txt","a")) == NULL){
+        printf("Failure to open data.txt!\n");
+        exit(0);
+    }
+    if(head==NULL){
+            head = (struct city *)malloc(sizeof(struct city));
+            if (head == NULL)
+            {
+                printf("No enough memory to alloc");
+                exit(0);
+            }
+            head->next = NULL;
+            tail = head;
+        printf("please input the info/空格分开/(名字name 邮编mail 人口pop "
+               "第一年gdp1 第二年gdp2 第三年gdp3).\n");
+        scanf(" %s %d %f %f %f %f",head->name, &head->mail,&head->pop,
+              &head->gdp1,&head->gdp2,&head->gdp3);
+        head->ave=(head->gdp1+head->gdp2+head->gdp3)/3.0;
+        fprintf(fp," %s %d %f %f %f %f %f\n",head->name, head->mail,
+                head->pop,head->gdp1,head->gdp2,head->gdp3,head->ave);
+        printf("是否继续输入,按Y键继续输入，其他键就结束.\n");
+        getchar();//消除之前输入的回车符
+        flag = getchar();
+    }
+
+    while(flag=='Y')
+    {
+        printf("please input the info/空格分开/(名字name 邮编mail"
+               " 人口pop 第一年gdp1 第二年gdp2 第三年gdp3).\n");
+        q = (struct city *)malloc(sizeof(struct city));
+        if (q == NULL)
+        {
+            printf("No enough memory to alloc\n");
+            exit(0);
+        }
+        q->next = NULL;
+        int scancount=scanf(" %s %d %f %f %f %f",q->name, &q->mail,&q->pop,
+                            &q->gdp1,&q->gdp2,&q->gdp3);
+        if(scancount!=6){
+            printf("input error!!\n");
+            continue;
+        }
+        q->ave=(q->gdp1+q->gdp2+q->gdp3)/3.0;
+        tail->next = q;
+        tail = q;
+        fprintf(fp," %s %d %f %f %f %f %f\n",q->name, q->mail,q->pop,
+                q->gdp1,q->gdp2,q->gdp3,q->ave);
+        printf("是否继续输入,按Y键继续输入，其他键就结束.\n");
+        getchar();//消除之前输入的回车符
+        flag = getchar();
+
+    }
+
+
+    fclose(fp);
+}
+
+
+//此函数设置窗口大小为 w*h
+//参数：长与高
+//返回void
+void modeset(int w,int h) {
+
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	//COORD size = {w, h};
+	//SetConsoleScreenBufferSize(hOut,size);
+	SMALL_RECT rc = {1,1, w, h};
+	SetConsoleWindowInfo(hOut ,true ,&rc);
+	return;
+}
+
+
+//隐藏光标
+//无参数需要
+//返回void
+void hidecursor(){
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO CursorInfo;
+    GetConsoleCursorInfo(handle,&CursorInfo);
+    CursorInfo.bVisible=0;
+    SetConsoleCursorInfo(handle,&CursorInfo);
+
+}
+
+
+//移动光标位置
+//参数：目标行列
+//返回void
+void Goto(short int x,short int y){
+    COORD pos={x,y};
+    HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleCursorPosition(hOutput,pos);
+
+}
+
+
+//展示全部数据
+//无参数需要
+//返回void
+void show(){
+    FILE *fp;
+     if((fp=fopen("data.txt","r")) == NULL){
+        printf("Failure to open data.txt!\n");
+        exit(0);
+    }
+      while( ! feof(fp) )
+    {
+        int ch;
+        if( (ch = fgetc(fp)) != EOF )
+            putchar(ch);
+    }
+    getch();
+    fclose(fp);
+}
+
+//清空数据
+//无参数需要
+//返回void
+void flush(){
+    FILE *fp;
+     if((fp=fopen("data.txt","w")) == NULL){
+        printf("Failure to open data.txt!\n");
+        exit(0);
+    }
+    fclose(fp);
+
+
+}
+
+
+//冒泡排序
+//参数：头指针
+//返回：头指针
+struct city *bubbleSortList( CITY *phead) {
+        if(phead == NULL || phead->next == NULL)return phead;
+        CITY temp;
+         CITY *pb ;
+         CITY *pf=phead;
+        while(pf->next!=NULL)
+        {
+            pb =pf->next;
+            for(;pb!=NULL; )
+            {
+                if((pf->ave)<(pb->ave)){
+                    temp = *pf;
+                    *pf=*pb;
+                    *pb =temp;
+
+                    pb->next =pf->next;
+                    pf->next=temp.next;
+                }
+                pb=pb->next;
+            }
+            pf=pf->next;
+        }
+        return phead;
+    }
+
+//冒泡排序
+//参数：头指针
+//返回：头指针
+CITY *bubbleSortmail( CITY *phead){
+    if(phead == NULL || phead->next == NULL)return phead;
+        CITY temp;
+         CITY *pb ;
+         CITY *pf=phead;
+        while(pf->next!=NULL)
+        {
+            pb =pf->next;
+            for(;pb!=NULL; )
+            {
+                if((pf->mail)<(pb->mail)){
+                    temp = *pf;
+                    *pf=*pb;
+                    *pb =temp;
+
+                    pb->next =pf->next;
+                    pf->next=temp.next;
+                }
+                pb=pb->next;
+            }
+            pf=pf->next;
+        }
+        return phead;
+}
+
+//冒泡排序
+//参数：头指针
+//返回：头指针
+CITY *bubbleSortpop( CITY *phead){
+    if(phead == NULL || phead->next == NULL)return phead;
+        CITY temp;
+         CITY *pb ;
+         CITY *pf=phead;
+        while(pf->next!=NULL)
+        {
+            pb =pf->next;
+            for(;pb!=NULL; )
+            {
+                if((pf->pop)<(pb->pop)){
+                    temp = *pf;
+                    *pf=*pb;
+                    *pb =temp;
+
+                    pb->next =pf->next;
+                    pf->next=temp.next;
+                }
+                pb=pb->next;
+            }
+            pf=pf->next;
+        }
+        return phead;
+}
+
+
+//冒泡排序
+//参数：头指针
+//返回：头指针
+CITY *bubbleSortname( CITY *phead){
+    if(phead == NULL || phead->next == NULL)return phead;
+        CITY temp;
+         CITY *pb ;
+         CITY *pf=phead;
+        while(pf->next!=NULL)
+        {
+            pb =pf->next;
+            for(;pb!=NULL; )
+            {
+                if( strcmp((pf->name),(pb->name)) >0   ){
+                    temp = *pf;
+                    *pf=*pb;
+                    *pb =temp;
+
+                    pb->next =pf->next;
+                    pf->next=temp.next;
+                }
+                pb=pb->next;
+            }
+            pf=pf->next;
+        }
+        return phead;
+}
+
+//FLOYD-WARSHALL算法
+/*测试样例
+4 8
+1 2 2
+1 3 6
+1 4 4
+2 3 3
+3 1 7
+3 4 1
+4 1 5
+4 3 12
+*/
+//无参数需要
+//返回void
+
+void mapdis(){
+    int dis[100][100],n,m;
+    int inf=9999999;
+    printf("请输入城市个数 航线条数\n");
+    scanf("%d %d",&n,&m);
+
+    //初始化
+    for(int i=1;i<=n;i++)
+        for(int j=1;j<=n;j++){
+            if(i==j) dis[i][j]=0;
+            else dis[i][j]=inf;
+        }
+
+    //读入数据
+    printf("请输入城市1编号 城市2编号 航线费用\n");
+    int a,b,distance;
+    for(int i=1;i<=m;i++){
+        scanf("%d %d %d",&a,&b,&distance);
+        dis[a][b]=distance;
+    }
+
+    //FLOYD-WARSHALL算法核心
+    for(int k=1;k<=n;k++){
+        for(int i=1;i<=n;i++){
+            for(int j=1;j<=n;j++){
+                if(dis[i][j]>dis[i][k]+dis[k][j])
+                    dis[i][j]=dis[i][k]+dis[k][j];
+            }
+        }
+    }
+
+    printf("计算得各地间旅行费用最少为\n");
+    for(int i=1;i<=n;i++){
+        for(int j=1;j<=n;j++){
+            printf("%10d",dis[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+//释放内存
+//参数：头指针
+//返回void
+void DeleteMemory(struct city * phead)
+{
+    struct city *p = phead, *pr = NULL;
+    while (p != NULL)
+    {
+        pr = p;//1
+        p = p->next;
+        free(pr);
+    }
+}
